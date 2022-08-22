@@ -8,3 +8,16 @@
 	sql에 < 문자가 포함된 경우
 		<![CDATA[ ~~~ ]]>
 		&lt;로 처리할 수도 있다
+		
+2. 스프링 빈의 이름
+- com.example.demo.controller.BoardController
+  com.example.demo.controller.rest.BoardController
+  13, 14라인처럼 작성하면 에러난다
+- @Component를 사용했을 때 객체의 이름은 첫글자를 소문자로 바꾼것이다
+		@Component
+		class BoardController{
+			...
+		}
+		
+		위 객체의 이름은 boardController가 된다
+		
