@@ -21,7 +21,7 @@ public interface CommentDao {
 	public Integer save(Comment comment);
 	
 	// 글번호로 댓글 출력
-	@Select("select cno,content,writer,writeTime from comments where cno=#{cno}")
+	@Select("select cno,content,writer,writeTime from comments where bno=#{bno}")
 	public List<CommentDto.Read> findByBno(Integer bno); 
 	
 	// 글쓴이 확인
