@@ -48,9 +48,7 @@
   </update>
  	
   <select id="findById" resultType="com.example.demo.dto.BoardDto$Read">
-  	<![CDATA[
   		select * from board where bno=#{bno} and rownum&lt;=1
-  	]]>
   </select>
   
   <select id="findWriterById" resultType="string">
