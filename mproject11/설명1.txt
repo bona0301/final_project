@@ -1,0 +1,153 @@
+1. WebServer, WAS
+㉠ 웹서버(Http 서버)
+  - 사용자 요청을 접수하고 응답하는 역할을 담당
+  - 정적인 요청(html, css, 자바스크립트, 이미지 등)을 직접 처리한다
+  - 동적인 요청을 골라 WAS에 넘긴다
+㉡ WAS(Web Application Server)
+  - 웹서버로 부터 동적인 요청을 전달받아 Servlet으로 처리 후 결과를 응답
+  - Servlet : WAS가 실행할 수 있는 자바 프로그램 표준
+  		ex) main대신 init -> service -> destroy 생명주기 함수 제공
+  - 서블릿 객체를 생성, 관리해주므로 Servlet Container라고도 한다
+㉢ WAS는 웹서버 기능도 제공한다
+  - 현업에서는 정적, 동적 요청별로 서버를 융통성있게 관리하기 위해 웹서버와 WAS를 분리한다
+  
+  
+2. 스프링 부트는 WAS를 내장하고 있다
+  - 외부 외부에 별도로 추가 서버를 두지 않고 Spring Boot Jar 파일만 실행하면 된다.
+  - 부트는 내장 WAS 권장
+      외부 WAS를 사용할 경우 DB, Connection Pool등 각종 설정을 WAS에서 잡는다
+      WAS에서 돌아가는 여러 웹 프로젝트들이 설정을 공유 
+
+
+3. 스프링 부트의 특징
+  - 내장 WAS 사용 -> 프로젝트 하나당 서버 한대이므로 배포가 쉽다
+  - XML config, Java config 중 Java config만 사용
+  - 설정이 자동화되어 있다
+
+
+4. ConnectionPool
+  - JDBC(Java DataBase Connectivity) : 자바 데이터베이스 프로그래밍 표준
+  - javax.sql.Connection
+  	  데이터베이스와 연결을 담당하는 자바 객체
+      사용자가 DB 작업을 원할 때마다 연결 객체를 만들고 작업이 끝나면 연결을 끊는 방식은 매우 비효율적이다
+  - Connetion Pool
+  	  연결을 미리 만들어서 저장해놓고 사용자에게 빌려주고 반납받는 기법                                             
+  	  Apache 재단의 DBCP, 스프링부트의 기본 CP인 Hikari 등이 있다
+  - DataSource
+  	  Connection Pool을 사용할 때 Connection 대신 사용하는 객체
+  	  DB 연결을 빌려오고 CP로 반납하는 기능을 가지고 있다
+  	
+  	  
+5. MyBatis 
+  - SQL과 그 SQL을 사용하는 DAO파일을 분리
+  - 작성방법
+  	  인터페이스 : @Select, @Insert, @Delete, @Update 어노테이션 사용
+  	  인터페이스 + xml : xml의 namespace가 DAO 이름, id가 메소드 이름
+  		namspace="com.example.dao.SampleDao", <select id="findAll"> 
+  		==>
+  		com.example.dao.SampleDao.findAll 메소드가 있어야 한다
+  		없으면 invalid bound statement (not found) 예외 발생ㅑ 
+  	  클래스 + xml
+  - 자동화된 동작
+      내부적으로 DataSource를 가지고 SqlSessionFactory 생성 -> SqlSessionTemplate 생성을 거친다
+  - xml 설정을 사용할 경우
+   		<bean name="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+   			<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+   			<property name="url" value="jdbc:oracle:thin:@localhost:1521:xe" />
+   			<property name="username" value="scott"/>
+   			<property name="password" value="1234"/>
+   		</bean>
+   		<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+   			<property name="dataSource" ref="dataSource" />
+   			<property name="mapperLocations" value="classpath:com/mybatis/mapper/*.xml" />
+   		</bean>		
+   		<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+   			<constructor-arg ref="sqlSessionFactory" />	
+   		</bean>
+  - 위 코드를 자바 설정으로 표현하면
+  		@Bean
+  		public SqlSessionTemplate sqlSessionTemplate() {
+  			DataSource dataSource = new DriverManagerDataSource();
+  			dataSource.setDriverClassName("oracle.jdbc.driver.OracleDriver");
+  			dataSource.setUrl("jdbc:oracle:thin:@localhost:1521:xe");
+  			dataSource.setUsername("scott");
+  			dataSource.setPassword("1234");
+  			
+  			SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBean();
+  			sqlSessionFactory.setDataSource(dataSource);
+  			sqlSessionFactory.setMapperLocations("classpath:com/mybatis/mapper/*.xml");
+  			
+  			SqlSessionTemplate sqlSession = new SqlSessionTemplate(sqlSessionFactory);
+  			return sqlSession
+  		}
+  		
+
+6. 요청과 응답 객체
+- 요청, 응답 객체는 header와 body로 구성된다
+	header는 편지 봉투, body는 편지라고 생각하면 된다
+- 요청 객체 
+	url : get 방식의 경우 body 대신 url로 서버에 파라미터를 전달한다(querystring)
+	header : 편지지(클라이언트 주소, 서버 주소 등)
+	body : 편지(post 방식의 경우 이곳에 파라미터가 담겨있다)
+- 응답 객체
+	header
+	  응답 데이터의 종류(mime 타입)
+	  	text/plain, text/html, text/css...
+	  	application/json, application/excel ...
+	  	application/octet-stream : 웹 브라우저는 다운로드한다 
+	  	image/jpg, image/gif....
+	  상태 코드 
+	  	400(HttpStatus.BAD_REQUEST) : 잘못된 요청 형식으로 서버측에서 거부. logback.xml에서 debug를 지정해야 상황을 볼 수 있다
+	  	401(HttpStatus.UNAUTHORIZED) : 로그인이 필요함
+	  	403(HttpStatus.FORBIDDEN) : 권한 없음
+	  	404(HttpStatus.NOT_FOUND) : url을 찾을 수 없음
+	  	405(HttpStatus.METHOD_NOT_ALLOWED) : 메소드를 처리할 수 없음
+	  	500(HttpStatus.INTERNAL_SERVER_ERROR) : 콘솔창에 오류 메시지가 출력된다
+	body : 응답 데이터를 담고있다
+	  
+  	 
+7. MVC 패턴(Model 2) - 효율적인 개발 및 유지보수를 위해 역할별로 분리
+	Model : 데이터를 나타내거나 처리하는 객체. 뷰나 컨트롤러에 대해 독립적(모른다)
+	View : 데이터를 출력하는 객체. 모델이나 컨트롤러에 대해 독립적(모른다)
+	Controller : 사용자 요청을 받아들여 모델과 뷰를 연결하는 역할
+
+
+8. 스프링 MVC
+㉠ 스프링 MVC는 서블릿 컨테이너 위에서 실행된다
+  - 서블릿과 스프링을 연결하는 역할을 담당하는 서블릿이 DispatcherServlet
+㉡ DispatcherServlet
+  - url-pattern: /*
+  - 모든 요청을 접수하는 FrontController에 해당
+  	  다이나믹 웹 프로젝트의 경우 사용자 요청마다 서블릿들을 따로 작성했었다
+  	  스프링은 요청을 접수하는 서블릿과 실제 작업을 수행하는 Controller를 분리
+  - HandlerMapping 객체를 이용해 실제 작업을 수행할 Controller를 찾는다
+      컨트롤러는 작업이 끝나면 처리 결과와 결과를 출력할 뷰의 이름를 ModelAndView에 담아 리턴
+  - ViewResolver 객체를 이용해 실제 뷰 파일을 찾은 다음 데이터와 함께 처리해 html로 사용자에게 응답한다  
+ 			 
+
+9. 스프링 @Controller
+㉠ 사용자 요청 수신, 응답 발신을 담당하는 클래스로 지정 
+㉡ @Controller의 응답 방식
+	ModelAndView : 데이터(Model)과 화면(View)를 지정
+	String : 화면(View)을 지정
+	void : 컨트롤러 메소드의 url이 화면(View)이 된다
+		@GetMapping("/board/list")라면 /board/list.html이 뷰가 된다
+ 
+10. REST 응답
+㉠ @Controller의 리턴 타입은 ModelAndView, String, void가 있다
+     REST 방식은 뷰없이 데이터만 바로 보내는데 어떻게 처리해야하나???
+㉡ 응답 객체의 바디에 데이터 하나를 담아서 리턴하도록 지정하는 어노테이션 추가 : @ResponseBody 등장 
+  - public @ResponseBody List<Board> list(Integer pageno) { }
+  - 데이터가 1개이므로 클라이언트는 응답 바디를 통채로 꺼내 처리하면 된다 
+㉢ 데이터를 받았어...근데 이게 무슨 데이터지? 
+  - 스프링 MVC 방식은 백엔드에서 Model 데이터와 View를 처리해 html로 만들어 클라이언트로 보낸다
+    클라이언트는 수신한 html을 브라우저에 출력만 하면 된다
+  - 데이터만 보내는 REST 방식에서 클라이언트 측은 서버가 보내줄 데이터의 종류를 알 수 없다
+    @GetMapping(value="/board/list", produces = MediaType.APPLICATION_JSON_VALUE)
+    public @ResponseBody List<Board> list(Integer pageno) { }
+㉣ 스프링은 @ResponseBody를 개선해 작업 상태를 추가한 ResponseEntity를 만들었다	
+  - ResponseEntity = @ResponseBody + HttpStatus
+  
+11. RestController
+- @Controller는 MVC와 REST 방식을 모두 지원한다
+- @RestController는 REST 방식만 지원한다 
