@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.dao.BoardDao">
+  <!-- xml에서 말하는 namespace는 xml을 정확하게 작성했는지 검증하는 기술 -->
+
+  <!-- writer를 입력한 경우 where절을 추가하는 동적 쿼리 -->
+  <select id="count" resultType="int">
+	select  /*+ index(board board_pk_bno) */ count(bno) from board
+	<where>
+		<if test="writer!=null">writer=#{writer}</if> 
+	</where>
+  </select>	
+  
+  <!-- writer를 입력한 경우 where절을 추가하는 동적 쿼리 -->
+  <select id="findAll" resultType="com.example.demo.dto.BoardDto$ForList">
+	select * from  	
+  	(
+  		select rownum as rnum, b.* from 
+  			(select /*+ index_desc(board board_pk_bno) */ bno, title, writer, readCnt, writeTime, commentCnt from board  
+  			<where>
+				<if test="writer!=null">writer=#{writer}</if> 
+			</where>
+  			 order by bno desc) b
+  		where rownum &lt;=#{end}
+  	)
+  	where rnum&gt;=#{start}
+  </select>
+  
+  <insert id="save">
+    <selectKey keyProperty="bno" order="BEFORE" resultType="int">
+      select board_seq.nextval from dual
+    </selectKey>
+      insert into board(bno,title,content,writer) values(#{bno},#{title},#{content},#{writer})
+  </insert>  
+  
+  <!-- 제목, 내용, 조회수, 좋아요, 싫어요, 댓글수 중 사용자가 선택한 컬럼을 변경 -->
+  <update id="update">
+  	update board 
+  	  <trim prefix="set" suffixOverrides=",">
+	   	<if test="title != null">title=#{title},</if>
+	  	<if test="content != null">content=#{content},</if>
+	  	<if test="readCnt != null">readCnt=readCnt+1,</if>
+	  	<if test="goodCnt != null">goodCnt=goodCnt+1,</if>
+	  	<if test="badCnt != null">badCnt=badCnt+1,</if>
+	  	<if test="commentCnt != null">commentCnt=#{commentCnt},</if>
+	  </trim>
+  	where bno=#{bno}
+  </update>
+ 	
+  <select id="findById" resultType="com.example.demo.dto.BoardDto$Read">
+  	<![CDATA[
+  		select * from board where bno=#{bno} and rownum&lt;=1
+  	]]>
+  </select>
+  
+  <select id="findWriterById" resultType="string">
+  	select writer from board where bno=#{bno} and rownum&lt;=1
+  </select>
+  
+  <delete id="deleteById">
+  	delete from board where bno=#{bno}
+  </delete>
+</mapper>
