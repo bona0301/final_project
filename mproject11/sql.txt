@@ -1,0 +1,31 @@
+drop table board;
+drop table comments;
+
+drop sequence board_seq;
+drop sequence comments_seq;
+
+create sequence board_seq;
+create sequence comments_seq;
+
+create table board (
+	bno number(6) constraint board_pk_bno primary key, 
+	title varchar2(100 char), 
+	content clob,
+	writer varchar2(10 char), 
+	writeTime date default sysdate,
+	readCnt number(3) default 0, 
+	commentCnt number(3) default 0,
+	goodCnt number(4) default 0,
+	badCnt number(4) default 0
+);
+
+create table comments (
+  	cno number(6) constraint comments_pk_cno primary key, 
+	content varchar2(200 char), 
+	writer varchar2(10 char), 
+	writeTime date default sysdate,
+	bno number(6) 
+);
+
+create index comments_idx_bno on comments(bno);
+
