@@ -17,7 +17,7 @@ public interface BoardDao {
 	public Integer count(String writer);
 	
 	// 페이징
-	public List<BoardDto.ForList> findAll(String writer, Integer start, Integer end);
+	public List<BoardDto.ForList> findAll(Map map);
 	
 	// 업데이트
 	public Integer update(Board board);
@@ -32,7 +32,6 @@ public interface BoardDao {
 	public Integer deleteById(Integer bno);
 	
 }
-
 
 
 
